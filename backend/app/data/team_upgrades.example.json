@@ -1,0 +1,14 @@
+{
+  "upgrades": [
+    {
+      "year": 2026,
+      "round": 8,
+      "team": "Ferrari",
+      "magnitude": 2,
+      "confidence": 0.7,
+      "areas": ["floor", "front_wing"],
+      "source": "FIA show-and-tell / team notes",
+      "note": "Example only: replace with real race-weekend upgrade notes."
+    }
+  ]
+}

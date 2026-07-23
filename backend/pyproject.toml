@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "f1-companion-api"
+version = "0.1.0"
+description = "Rate-limited OpenF1 companion API"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "fastf1>=3.6,<4",
+  "faster-whisper>=1.1,<2",
+  "googletrans>=4.0.0,<5",
+  "httpx>=0.28,<1",
+  "requests>=2.32,<3",
+  "signalrcore>=1.0,<2",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-asyncio>=0.25,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

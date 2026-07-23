@@ -1,0 +1,79 @@
+name: Send deploy dispatch smoke test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    name: Send repository dispatch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Validate dispatch configuration
+        shell: bash
+        env:
+          DEPLOY_REPOSITORY: ${{ vars.DEPLOY_REPOSITORY }}
+          DEPLOY_EVENT_TYPE: deploy-f1-companion-smoke
+          DEPLOY_REPO_TOKEN: ${{ secrets.DEPLOY_REPO_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+
+          : "${DEPLOY_REPOSITORY:?DEPLOY_REPOSITORY is missing}"
+          : "${DEPLOY_REPO_TOKEN:?DEPLOY_REPO_TOKEN is missing}"
+
+          if [[ "$DEPLOY_EVENT_TYPE" != "deploy-f1-companion-smoke" ]]; then
+            echo "Unexpected event type: $DEPLOY_EVENT_TYPE" >&2
+            exit 1
+          fi
+
+          echo "Dispatch configuration valid."
+
+      - name: Send repository dispatch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.DEPLOY_REPO_TOKEN }}
+          DEPLOY_REPOSITORY: ${{ vars.DEPLOY_REPOSITORY }}
+          DEPLOY_EVENT_TYPE: deploy-f1-companion-smoke
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          API_IMAGE: ${{ vars.API_IMAGE }}
+          FRONTEND_IMAGE: ${{ vars.FRONTEND_IMAGE }}
+        run: |
+          set -Eeuo pipefail
+
+          : "${API_IMAGE:?API_IMAGE is missing}"
+          : "${FRONTEND_IMAGE:?FRONTEND_IMAGE is missing}"
+
+          PAYLOAD="$(
+            jq -n \
+              --arg event_type "$DEPLOY_EVENT_TYPE" \
+              --arg source_repository "$SOURCE_REPOSITORY" \
+              --arg source_sha "$SOURCE_SHA" \
+              --arg image_tag "$SOURCE_SHA" \
+              --arg api_image "$API_IMAGE" \
+              --arg frontend_image "$FRONTEND_IMAGE" \
+              '{
+                event_type: $event_type,
+                client_payload: {
+                  source_repository: $source_repository,
+                  source_sha: $source_sha,
+                  image_tag: $image_tag,
+                  api_image: $api_image,
+                  frontend_image: $frontend_image
+                }
+              }'
+          )"
+
+          printf '%s\n' "$PAYLOAD" |
+            gh api \
+              --method POST \
+              "repos/${DEPLOY_REPOSITORY}/dispatches" \
+              --input -
+
+          echo "Repository dispatch accepted."
+          echo "Source repository: $SOURCE_REPOSITORY"
+          echo "Source SHA: $SOURCE_SHA"
